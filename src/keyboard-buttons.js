@@ -6,8 +6,8 @@ module.exports = {
   },
   films: {
     all: 'Все',
-    drama: 'Драма',
-    cartoon: 'Мультфильмы'
+    action: 'Бевик',
+    comedy: 'Комедия'
   },
   back: 'Назад',
 };

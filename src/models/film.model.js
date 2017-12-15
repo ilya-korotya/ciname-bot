@@ -37,3 +37,5 @@ const FilmSchema = new Schema({
     default: [],
   }
 });
+
+mongoose.model('films', FilmSchema);
