@@ -4,7 +4,7 @@ const mongoose = require('mongoose');
 const utlits = require('./utlits.js');
 const keyboard = require('./keyboard.js');
 const kb = require('./keyboard-buttons.js');
-//const database = require('../database.json');
+// const database = require('../database.json');
 
 utlits.logStart();
 
@@ -110,16 +110,72 @@ console.log(123321);
 //     "rate": 8.634,
 //     "length": "1:27",
 //     "country": "Германия",
-//     "link": "https://www.kinopoisk.ru/film/dostuchatsya-do-nebes-1997-32898",
-//     "picture": "https://st.kp.yandex.net/images/film_iphone/iphone360_32898.jpg",
-//     "cinemas": ["c456", "c123"]
+//      "link": "https://www.kinopoisk.ru/film/dostuchatsya-do-nebes-1997-32898",
+//      "picture": "https://st.kp.yandex.net/images/film_iphone/iphone360_32898.jpg",
+//      "cinemas": ["c456", "c123"]
+//    }
+//  ]
+// const cinemas = [
+//   {
+//     "uuid": "c123",
+//     "name": "World Cinema Plus",
+//     "location": {
+//       "latitude": 59.883744,
+//       "longitude": 30.268672
+//     },
+//     "url": "http://world-cinema-plus.com",
+//     "films": ["f890", "f678", "f567", "f123", "f234"]
+//   },
+//   {
+//     "uuid": "c234",
+//     "name": "The Greatest Cinema",
+//     "location": {
+//       "latitude": 59.843103,
+//       "longitude": 30.305378
+//     },
+//     "url": "http://the-greatest-cinema.com",
+//     "films": ["f345", "f678"]
+//   },
+//   {
+//     "uuid": "c345",
+//     "name": "Watch your eyes",
+//     "location": {
+//       "latitude": 60.024840,
+//       "longitude": 30.390167
+//     },
+//     "url": "http://watch-your-eyes.com",
+//     "films": ["f123", "f345", "f456", "f567", "f789"]
+//   },
+//   {
+//     "uuid": "c456",
+//     "name": "Happy hours",
+//     "location": {
+//       "latitude": 59.828174,
+//       "longitude": 30.377967
+//     },
+//     "url": "http://happy-hours.com",
+//     "films": ["f234", "f456", "f789", "f890"]
+//   },
+//   {
+//     "uuid": "c567",
+//     "name": "Family Cinema",
+//     "location": {
+//       "latitude": 60.000354,
+//       "longitude": 30.194079
+//     },
+//     "url": "http://family-cinema.com",
+//     "films": ["f567", "f789"]
 //   }
-// ]
+// ];
 
 require('./models/film.model.js');
+require('./models/cinema.model.js');
 
 const Film = mongoose.model('films');
-//films.forEach(f => new Film(f).save().catch(err => console.log(err)));
+const Cinema = mongoose.model('cinemas');
+
+// films.forEach(f => new Film(f).save().catch(err => console.log(err)));
+// cinemas.forEach(c => new Cinema(c).save().catch(err => console.log(err)));
 
 
 // =================================================
@@ -131,6 +187,8 @@ const bot = new TelegramBot(config.TOKEN, {
 bot.on('message', msg => {
 
   const userId = utlits.getUserInd(msg);
+
+  console.log(userId);
 
   switch (msg.text) {
     case kb.films.all:
@@ -148,6 +206,10 @@ bot.on('message', msg => {
       });
       break;
     case kb.home.cinemas:
+
+
+
+      getCinemaFromQuery(userId, {});
       break;
     case kb.home.favorite:
       break;
@@ -185,24 +247,39 @@ bot.onText(/\/f(.+)/, (msg, [source, math]) => {
       caption: caption,
       reply_markup: {
         inline_keyboard: [
-            [
-              {
-                text: 'Кинопоиск',
-                url: film.link,
-              }
-            ],
-            [
-              {
-                text: 'В избранное',
-                callback_data: film.uuid,
-              }
-            ]
+          [
+            {
+              text: 'Кинопоиск',
+              url: film.link,
+            }
+          ],
+          [
+            {
+              text: 'В избранное',
+              callback_data: film.uuid,
+            }
+          ]
         ]
       }
     });
 
   });
+});
 
+bot.onText(/\/c(.+)/, (msg, [source, math]) => {
+
+  const chatID = utlits.getUserInd(msg);
+
+  const cinema = Cinema.findOne({uuid: math})
+      .then((cinema) => {
+
+        bot.sendMessage(chatID, cinema.name);
+
+        bot.sendLocation(chatID,
+              cinema.location.latitude,
+              cinema.location.longitude);
+
+      });
 
 });
 
@@ -223,13 +300,27 @@ function getFilmFromQuery(chatID, query) {
       .catch(err => console.log(`Ошибка запроса ${err}`))
 }
 
+function getCinemaFromQuery(chatID, query) {
+  Cinema.find(query)
+      .then(cinemas => {
+
+        const html = cinemas.map((cinema, index) => {
+          return `${index + 1}. ${cinema.name} - /c${
+              cinema.uuid}`;
+        }).join(`\n`);
+
+        sendHTML(chatID, html);
+      })
+      .catch((err) => console.log(err));
+}
+
 function sendHTML(chatID, html, kbName = null) {
 
   const options = {
     parse_mode: 'HTML',
   };
 
-  if(kbName) {
+  if (kbName) {
     options['reply_markup'] = {
       keyboard: keyboard[kbName],
     }
