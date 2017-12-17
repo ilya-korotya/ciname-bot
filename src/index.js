@@ -14,8 +14,6 @@ mongoose.connect(config.DB_URL, {
     .then(data => console.log('db OK'))
     .catch(err => console.log('db ERROR'));
 
-console.log(123321);
-
 
 // const films = [
 //   {
@@ -170,9 +168,11 @@ console.log(123321);
 
 require('./models/film.model.js');
 require('./models/cinema.model.js');
+require('./models/user.model.js');
 
 const Film = mongoose.model('films');
 const Cinema = mongoose.model('cinemas');
+const User = mongoose.model('users');
 
 // films.forEach(f => new Film(f).save().catch(err => console.log(err)));
 // cinemas.forEach(c => new Cinema(c).save().catch(err => console.log(err)));
@@ -188,7 +188,11 @@ bot.on('message', msg => {
 
   const userId = utlits.getUserInd(msg);
 
-  console.log(userId);
+  if (msg.location) {
+    getCinemaFromQuery(userId, {}, msg.location);
+  } else if (msg.text === kb.dialogPosition.error) {
+    getCinemaFromQuery(userId, {});
+  }
 
   switch (msg.text) {
     case kb.films.all:
@@ -206,10 +210,10 @@ bot.on('message', msg => {
       });
       break;
     case kb.home.cinemas:
-
-
-
-      getCinemaFromQuery(userId, {});
+      bot.sendMessage(userId, 'Ваше местоположение',
+          {
+            reply_markup: {keyboard: keyboard.positionDialog},
+          });
       break;
     case kb.home.favorite:
       break;
@@ -238,32 +242,60 @@ bot.onText(/\/f(.+)/, (msg, [source, math]) => {
 
   const chatID = utlits.getUserInd(msg);
 
-  const film = Film.findOne({uuid: math}).then(film => {
+  Promise.all([authOrRegUser(msg.from.id), Film.findOne({uuid: math})])
+      .then((info) => {
 
-    const caption =
-        `Название:  ${film.name}\nГод:  ${film.year}\nРейтинг:  ${film.rate}\nСтрана:  ${film.country}\nВремя:  ${film.length}`;
+        const currentUser = info[0];
+        const currentFilm = info[1];
 
-    bot.sendPhoto(chatID, film.picture, {
-      caption: caption,
-      reply_markup: {
-        inline_keyboard: [
-          [
-            {
-              text: 'Кинопоиск',
-              url: film.link,
+        let filmFav = false;
+
+
+        if (currentUser.favoriteFilms.length !== 0) {
+          filmFav = currentUser.favoriteFilms.find(f => {
+            if (f === currentFilm.uuid) {
+              return true;
             }
-          ],
-          [
-            {
-              text: 'В избранное',
-              callback_data: film.uuid,
-            }
-          ]
-        ]
-      }
-    });
+            return false;
+          });
+        }
 
-  });
+        console.log(filmFav);
+
+        const film = Film.findOne({uuid: math}).then(film => {
+
+          const caption =
+              `Название:  ${film.name}\nГод:  ${film.year}\nРейтинг:  ${film.rate}\nСтрана:  ${film.country}\nВремя:  ${film.length}`;
+
+          const textFav = filmFav ? 'Удалить из избраного' : 'В избранное';
+
+          bot.sendPhoto(chatID, film.picture, {
+            caption: caption,
+            reply_markup: {
+              inline_keyboard: [
+                [
+                  {
+                    text: 'Кинопоиск',
+                    url: film.link,
+                  }
+                ],
+                [
+                  {
+                    text: textFav,
+                    callback_data: JSON.stringify({
+                      uuid: film.uuid,
+                      user: currentUser.id,
+                      flag: filmFav,
+                    }),
+                  }
+                ]
+              ]
+            }
+          });
+
+        });
+
+      });
 });
 
 bot.onText(/\/c(.+)/, (msg, [source, math]) => {
@@ -276,13 +308,46 @@ bot.onText(/\/c(.+)/, (msg, [source, math]) => {
         bot.sendMessage(chatID, cinema.name);
 
         bot.sendLocation(chatID,
-              cinema.location.latitude,
-              cinema.location.longitude);
+            cinema.location.latitude,
+            cinema.location.longitude);
 
       });
 
 });
 
+bot.on('callback_query', function (query) {
+
+  const data = JSON.parse(query.data);
+
+  let userPromise;
+
+  if (data.flag) {
+
+    User.findOne({id: data.user}).then(user => {
+      const clearFilm = user.favoriteFilms.filter(f => {
+
+        if (f === data.uuid) {
+          return false;
+        }
+
+        return true;
+
+      });
+      user.favoriteFilms = clearFilm;
+      user.save();
+    });
+
+  } else {
+    User.findOne({id: data.user})
+        .then(user => {
+              user.favoriteFilms = [...user.favoriteFilms, data.uuid];
+              user.save();
+            }
+        );
+  }
+
+
+});
 
 //====================================
 
@@ -300,12 +365,24 @@ function getFilmFromQuery(chatID, query) {
       .catch(err => console.log(`Ошибка запроса ${err}`))
 }
 
-function getCinemaFromQuery(chatID, query) {
+function getCinemaFromQuery(chatID, query, position = null) {
   Cinema.find(query)
       .then(cinemas => {
 
         const html = cinemas.map((cinema, index) => {
-          return `${index + 1}. ${cinema.name} - /c${
+
+          let distance = 'Неизвестно';
+
+          if (position) {
+
+            distance = utlits.getDistanceToCinema(
+                position.latitude,
+                position.longitude,
+                cinema.location.latitude,
+                cinema.location.longitude);
+          }
+
+          return `${index + 1}. ${cinema.name} растояние: <b>${distance} км</b> - /c${
               cinema.uuid}`;
         }).join(`\n`);
 
@@ -327,4 +404,18 @@ function sendHTML(chatID, html, kbName = null) {
   }
 
   bot.sendMessage(chatID, html, options);
+}
+
+function authOrRegUser(userID) {
+
+  return User.findOne({id: userID}).then(user => {
+
+    if (user) {
+      return user;
+    } else {
+      return User.create({id: userID}).save();
+    }
+
+  });
+
 }

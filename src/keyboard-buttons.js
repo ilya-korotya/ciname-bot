@@ -9,5 +9,9 @@ module.exports = {
     action: 'Бевик',
     comedy: 'Комедия'
   },
+  dialogPosition: {
+    success: 'Отправить координаты',
+    error: 'Не отправлять координаты',
+  },
   back: 'Назад',
 };
