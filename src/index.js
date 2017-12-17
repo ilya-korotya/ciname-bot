@@ -188,6 +188,8 @@ bot.on('message', msg => {
 
   const userId = utlits.getUserInd(msg);
 
+  //console.log(msg);
+
   if (msg.location) {
     getCinemaFromQuery(userId, {}, msg.location);
   } else if (msg.text === kb.dialogPosition.error) {
@@ -216,6 +218,7 @@ bot.on('message', msg => {
           });
       break;
     case kb.home.favorite:
+      getFavoriteList(userId, msg.from.id);
       break;
     case kb.back:
       bot.sendMessage(userId, 'Что делаем?', {
@@ -259,8 +262,6 @@ bot.onText(/\/f(.+)/, (msg, [source, math]) => {
             return false;
           });
         }
-
-        console.log(filmFav);
 
         const film = Film.findOne({uuid: math}).then(film => {
 
@@ -318,27 +319,26 @@ bot.onText(/\/c(.+)/, (msg, [source, math]) => {
 bot.on('callback_query', function (query) {
 
   const data = JSON.parse(query.data);
-
-  let userPromise;
+  let userPromiseFind = User.findOne({id: data.user});
 
   if (data.flag) {
+    userPromiseFind
+        .then(user => {
+          const clearFilm = user.favoriteFilms.filter(f => {
 
-    User.findOne({id: data.user}).then(user => {
-      const clearFilm = user.favoriteFilms.filter(f => {
+            if (f === data.uuid) {
+              return false;
+            }
 
-        if (f === data.uuid) {
-          return false;
-        }
+            return true;
 
-        return true;
-
-      });
-      user.favoriteFilms = clearFilm;
-      user.save();
-    });
+          });
+          user.favoriteFilms = clearFilm;
+          user.save();
+        });
 
   } else {
-    User.findOne({id: data.user})
+    userPromiseFind
         .then(user => {
               user.favoriteFilms = [...user.favoriteFilms, data.uuid];
               user.save();
@@ -349,7 +349,7 @@ bot.on('callback_query', function (query) {
 
 });
 
-//====================================
+//=================================================================
 
 function getFilmFromQuery(chatID, query) {
   Film.find(query)
@@ -389,6 +389,34 @@ function getCinemaFromQuery(chatID, query, position = null) {
         sendHTML(chatID, html);
       })
       .catch((err) => console.log(err));
+}
+
+function getFavoriteList(chatID, userID) {
+
+  User.findOne({id: userID})
+      .then(user => {
+
+        Film.find({uuid: {'$in': user.favoriteFilms}})
+            .then((films) => {
+
+              let html;
+
+              if (films.length === 0) {
+                html = 'Вы ничего не добавили!';
+              } else {
+
+                html = films.map((f, i) => {
+                  return `${i + 1}. <b>${f.name}</b> - /f${f.uuid}`;
+                }).join('\n');
+
+              }
+
+              sendHTML(chatID, html);
+
+            });
+
+      });
+
 }
 
 function sendHTML(chatID, html, kbName = null) {
