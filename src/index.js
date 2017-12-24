@@ -4,7 +4,9 @@ const mongoose = require('mongoose');
 const utlits = require('./utlits.js');
 const keyboard = require('./keyboard.js');
 const kb = require('./keyboard-buttons.js');
-// const database = require('../database.json');
+
+const request = require('request');
+const cheerio = require('cheerio');
 
 utlits.logStart();
 
@@ -446,4 +448,8 @@ function authOrRegUser(userID) {
 
   });
 
+}
+
+function getMonthFilm(filmName) {
+  
 }
