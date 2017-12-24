@@ -19,9 +19,9 @@ mongoose.connect(config.DB_URL, {
 
 // const films = [
 //   {
-//     "uuid": "f123", //
-//     "name": "Начало", //
-//     "type": "action", //
+//     "uuid": "f123",
+//     "name": "Inception",
+//     "type": "action",
 //     "year": "2010",
 //     "rate": 8.665,
 //     "length": "2:28",
@@ -32,7 +32,7 @@ mongoose.connect(config.DB_URL, {
 //   },
 //   {
 //     "uuid": "f234",
-//     "name": "Гладиатор",
+//     "name": "Gladiator",
 //     "type": "action",
 //     "year": "2000",
 //     "rate": 8.592,
@@ -44,7 +44,7 @@ mongoose.connect(config.DB_URL, {
 //   },
 //   {
 //     "uuid": "f345",
-//     "name": "Матрица",
+//     "name": "The Matrix",
 //     "type": "action",
 //     "year": "1999",
 //     "rate": 8.491,
@@ -56,19 +56,19 @@ mongoose.connect(config.DB_URL, {
 //   },
 //   {
 //     "uuid": "f456",
-//     "name": "Брат",
+//     "name": "Pulp Fiction",
 //     "type": "action",
-//     "year": "1997",
-//     "rate": 8.491,
-//     "length": "1:40",
-//     "country": "Россия",
+//     "year": "1994",
+//     "rate": 8.691,
+//     "length": "2:34",
+//     "country": "США",
 //     "link": "https://www.kinopoisk.ru/film/brat-1997-41519",
 //     "picture": "https://www.kinopoisk.ru/images/film_big/41519.jpg",
 //     "cinemas": ["c345", "c456"]
 //   },
 //   {
 //     "uuid": "f567",
-//     "name": "Карты, деньги, два ствола",
+//     "name": "Lock Stock and Two Smoking Barrels",
 //     "type": "comedy",
 //     "year": "1998",
 //     "rate": 8.543,
@@ -80,7 +80,7 @@ mongoose.connect(config.DB_URL, {
 //   },
 //   {
 //     "uuid": "f678",
-//     "name": "Форрест Гамп",
+//     "name": "Forrest Gump",
 //     "type": "comedy",
 //     "year": "1994",
 //     "rate": 8.922,
@@ -92,7 +92,7 @@ mongoose.connect(config.DB_URL, {
 //   },
 //   {
 //     "uuid": "f789",
-//     "name": "1+1",
+//     "name": "The Intouchables",
 //     "type": "comedy",
 //     "year": "2011",
 //     "rate": 8.812,
@@ -104,7 +104,7 @@ mongoose.connect(config.DB_URL, {
 //   },
 //   {
 //     "uuid": "f890",
-//     "name": "Достучаться до небес",
+//     "name": "Knockin' on Heaven's Door",
 //     "type": "comedy",
 //     "year": "1997",
 //     "rate": 8.634,
@@ -272,6 +272,8 @@ bot.onText(/\/f(.+)/, (msg, [source, math]) => {
 
           const textFav = filmFav ? 'Удалить из избраного' : 'В избранное';
 
+          const linkToWatch = getLinkToWatch();
+
           bot.sendPhoto(chatID, film.picture, {
             caption: caption,
             reply_markup: {
@@ -290,6 +292,12 @@ bot.onText(/\/f(.+)/, (msg, [source, math]) => {
                       user: currentUser.id,
                       flag: filmFav,
                     }),
+                  }
+                ],
+                [
+                  {
+                    text: 'Смотреть',
+                    url: 'http://gidonline.in/',
                   }
                 ]
               ]
@@ -450,6 +458,22 @@ function authOrRegUser(userID) {
 
 }
 
-function getMonthFilm(filmName) {
-  
+function getLinkToWatch(filmName = null) {
+
+  console.log(`начал поиск по ${config.IMDB_AUTH_LINK + '&t=Pulp+Fiction'}`);
+
+  // request.get(config.IMDB_AUTH_LINK + '&t=Pulp+Fiction')
+  //     .on('response', function (err, httpResponse) {
+  //       console.log(response.toJSON());
+  //     })
+  //     .on('error', function (err) {
+  //       console.log(err)
+  //     });
+
+
+  request.get({url: config.IMDB_AUTH_LINK + '&t=Pulp+Fiction'}, function (err,httpResponse,body){
+    console.log(body);
+  });
+
+
 }
