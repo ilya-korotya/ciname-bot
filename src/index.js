@@ -21,6 +21,7 @@ mongoose.connect(config.DB_URL, {
 //   {
 //     "uuid": "f123",
 //     "name": "Inception",
+//     "nameRus": "Начадло",
 //     "type": "action",
 //     "year": "2010",
 //     "rate": 8.665,
@@ -33,6 +34,7 @@ mongoose.connect(config.DB_URL, {
 //   {
 //     "uuid": "f234",
 //     "name": "Gladiator",
+//     "nameRus": "Гладиатор",
 //     "type": "action",
 //     "year": "2000",
 //     "rate": 8.592,
@@ -45,6 +47,7 @@ mongoose.connect(config.DB_URL, {
 //   {
 //     "uuid": "f345",
 //     "name": "The Matrix",
+//     "nameRus": "Матрица",
 //     "type": "action",
 //     "year": "1999",
 //     "rate": 8.491,
@@ -57,6 +60,7 @@ mongoose.connect(config.DB_URL, {
 //   {
 //     "uuid": "f456",
 //     "name": "Pulp Fiction",
+//     "nameRus": "Криминальное чтиво",
 //     "type": "action",
 //     "year": "1994",
 //     "rate": 8.691,
@@ -69,6 +73,7 @@ mongoose.connect(config.DB_URL, {
 //   {
 //     "uuid": "f567",
 //     "name": "Lock Stock and Two Smoking Barrels",
+//     "nameRus": "Карты деньги два ствола",
 //     "type": "comedy",
 //     "year": "1998",
 //     "rate": 8.543,
@@ -81,6 +86,7 @@ mongoose.connect(config.DB_URL, {
 //   {
 //     "uuid": "f678",
 //     "name": "Forrest Gump",
+//     "nameRus": "Форест Гамп",
 //     "type": "comedy",
 //     "year": "1994",
 //     "rate": 8.922,
@@ -93,6 +99,7 @@ mongoose.connect(config.DB_URL, {
 //   {
 //     "uuid": "f789",
 //     "name": "The Intouchables",
+//     "nameRus": "Неприкасаемые",
 //     "type": "comedy",
 //     "year": "2011",
 //     "rate": 8.812,
@@ -104,7 +111,8 @@ mongoose.connect(config.DB_URL, {
 //   },
 //   {
 //     "uuid": "f890",
-//     "name": "Knockin' on Heaven's Door",
+//     "name": "Knockin’ On Heaven’s Door",
+//     "nameRus": "Достучаться до небес",
 //     "type": "comedy",
 //     "year": "1997",
 //     "rate": 8.634,
@@ -272,7 +280,7 @@ bot.onText(/\/f(.+)/, (msg, [source, math]) => {
 
           const textFav = filmFav ? 'Удалить из избраного' : 'В избранное';
 
-          const linkToWatch = getLinkToWatch();
+          const linkToWatch = getLinkToWatch(film['nameRus']);
 
           bot.sendPhoto(chatID, film.picture, {
             caption: caption,
@@ -460,20 +468,15 @@ function authOrRegUser(userID) {
 
 function getLinkToWatch(filmName = null) {
 
-  console.log(`начал поиск по ${config.IMDB_AUTH_LINK + '&t=Pulp+Fiction'}`);
+  // API imdb
+  // console.log(`начал поиск по ${config.IMDB_AUTH_LINK + '&t=Pulp+Fiction'}`);
+  //
+  // request.get({url: config.IMDB_AUTH_LINK + '&t=Pulp+Fiction'}, function (err, httpResponse, body){
+  //
+  //   const filmInfo = JSON.parse(body);
+  //   const mountToInt = utlits.getMountToInt(filmInfo.Released);
+  //   console.log(mountToInt);
+  // });
 
-  // request.get(config.IMDB_AUTH_LINK + '&t=Pulp+Fiction')
-  //     .on('response', function (err, httpResponse) {
-  //       console.log(response.toJSON());
-  //     })
-  //     .on('error', function (err) {
-  //       console.log(err)
-  //     });
-
-
-  request.get({url: config.IMDB_AUTH_LINK + '&t=Pulp+Fiction'}, function (err,httpResponse,body){
-    console.log(body);
-  });
-
-
+  console.log(filmName);
 }

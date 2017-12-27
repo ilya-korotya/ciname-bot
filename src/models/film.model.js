@@ -6,6 +6,10 @@ const FilmSchema = new Schema({
     type: String,
     required: true,
   },
+  nameRus: {
+    type: String,
+    required: true,
+  },
   type: {
     type: String,
     required: true,
