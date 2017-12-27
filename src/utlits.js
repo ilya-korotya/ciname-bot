@@ -26,4 +26,16 @@ module.exports = {
     return deg * (Math.PI / 180)
   },
 
+
+  getMountToInt(filmData) {
+    const stringMount = this.getMountFromData(filmData)[0];
+    return mountList.indexOf(stringMount.toLowerCase()) + 1;
+  },
+
+  getMountFromData(filmData) {
+    return filmData.match(/[a-zA-z]+/);
+  }
+
 };
+
+const mountList = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sept' , 'oct', 'nov', 'dec'];
