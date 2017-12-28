@@ -39,6 +39,10 @@ const FilmSchema = new Schema({
   cinemas: {
     type: [String],
     default: [],
+  },
+  linkToFilm: {
+    type: String,
+    default: '',
   }
 });
 

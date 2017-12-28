@@ -280,36 +280,13 @@ bot.onText(/\/f(.+)/, (msg, [source, math]) => {
 
           const textFav = filmFav ? 'Удалить из избраного' : 'В избранное';
 
-          const linkToWatch = getLinkToWatch(film['nameRus']);
-
-          bot.sendPhoto(chatID, film.picture, {
-            caption: caption,
-            reply_markup: {
-              inline_keyboard: [
-                [
-                  {
-                    text: 'Кинопоиск',
-                    url: film.link,
-                  }
-                ],
-                [
-                  {
-                    text: textFav,
-                    callback_data: JSON.stringify({
-                      uuid: film.uuid,
-                      user: currentUser.id,
-                      flag: filmFav,
-                    }),
-                  }
-                ],
-                [
-                  {
-                    text: 'Смотреть',
-                    url: 'http://gidonline.in/',
-                  }
-                ]
-              ]
-            }
+          const linkToWatch = getLinkToFilm(film['nameRus'], {
+            chatID,
+            caption,
+            textFav,
+            film,
+            currentUser,
+            filmFav
           });
 
         });
@@ -466,17 +443,93 @@ function authOrRegUser(userID) {
 
 }
 
-function getLinkToWatch(filmName = null) {
+function getLinkToFilm(filmName, chatInfo) {
 
-  // API imdb
-  // console.log(`начал поиск по ${config.IMDB_AUTH_LINK + '&t=Pulp+Fiction'}`);
-  //
-  // request.get({url: config.IMDB_AUTH_LINK + '&t=Pulp+Fiction'}, function (err, httpResponse, body){
-  //
-  //   const filmInfo = JSON.parse(body);
-  //   const mountToInt = utlits.getMountToInt(filmInfo.Released);
-  //   console.log(mountToInt);
-  // });
+  const options = {
+    url: 'http://gidonline.in/',
+    method: 'GET',
+    qs: {
+      s: filmName
+    }
+  };
 
-  console.log(filmName);
+  request.get(options, function (err, httpResonse, body) {
+
+        if (err) {
+          console.log(err);
+        }
+
+        let linkgToFilm = '';
+
+
+        // Film.find({'uuid': film.uuid}).then(data => {
+        //
+        //   linkgToFilm = data.linkFilm;
+        //
+        // });
+
+
+        const $ = cheerio.load(body);
+
+        if ($('#single').length > 0) {
+          linkgToFilm = httpResonse.request.uri.href;
+
+          Film.findOne({uuid : chatInfo.film.uuid}).then(data => {
+            console.log(123);
+            console.log(data);
+            data.linkToFilm = linkgToFilm;
+            data.save();
+
+          })
+              .catch(err => console.log(err));
+
+        }
+        else if ($('.mainlink').length > 0) {
+
+          $('.mainlink').each((index, elem) => {
+
+            let some = $(elem).find('.mqn');
+
+            if (some[0].children[0].data === chatInfo.film.year) {
+              linkgToFilm = $(elem).attr('href');
+            }
+
+          });
+
+          console.log(linkgToFilm);
+
+        }
+
+        bot.sendPhoto(chatInfo.chatID, chatInfo.film.picture, {
+          caption: chatInfo.caption,
+          reply_markup: {
+            inline_keyboard: [
+              [
+                {
+                  text: 'Кинопоиск',
+                  url: chatInfo.film.link,
+                }
+              ],
+              [
+                {
+                  text: chatInfo.textFav,
+                  callback_data: JSON.stringify({
+                    uuid: chatInfo.film.uuid,
+                    user: chatInfo.currentUser.id,
+                    flag: chatInfo.filmFav,
+                  }),
+                }
+              ],
+              [
+                {
+                  text: 'Смотреть',
+                  url: linkgToFilm,
+                }
+              ]
+            ]
+          }
+        });
+      }
+  );
+
 }
