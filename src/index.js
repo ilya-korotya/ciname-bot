@@ -443,7 +443,41 @@ function authOrRegUser(userID) {
 
 }
 
-function getLinkToFilm(filmName, chatInfo) {
+function sendFilmKeyboard(kayboardInfo, linkToFilm) {
+  bot.sendPhoto(kayboardInfo.chatID, kayboardInfo.film.picture, {
+    caption: kayboardInfo.caption,
+    reply_markup: {
+      inline_keyboard: [
+        [
+          {
+            text: 'Кинопоиск',
+            url: kayboardInfo.film.link,
+          }
+        ],
+        [
+          {
+            text: kayboardInfo.textFav,
+            callback_data: JSON.stringify({
+              uuid: kayboardInfo.film.uuid,
+              user: kayboardInfo.currentUser.id,
+              flag: kayboardInfo.filmFav,
+            }),
+          }
+        ],
+        [
+          {
+            text: 'Смотреть',
+            url: linkToFilm,
+          }
+        ]
+      ]
+    }
+  });
+}
+
+// асинхронные функции
+
+async function parseAndGetLink(filmName, chatInfo) {
 
   const options = {
     url: 'http://gidonline.in/',
@@ -453,7 +487,9 @@ function getLinkToFilm(filmName, chatInfo) {
     }
   };
 
-  request.get(options, function (err, httpResonse, body) {
+  await request.get(options, (err, httpResonse, body) => {
+
+        console.log('Парсим!!!');
 
         if (err) {
           console.log(err);
@@ -461,75 +497,70 @@ function getLinkToFilm(filmName, chatInfo) {
 
         let linkgToFilm = '';
 
-
-        // Film.find({'uuid': film.uuid}).then(data => {
-        //
-        //   linkgToFilm = data.linkFilm;
-        //
-        // });
-
-
         const $ = cheerio.load(body);
 
         if ($('#single').length > 0) {
+
           linkgToFilm = httpResonse.request.uri.href;
+          addFilmLink(chatInfo.film.uuid, linkgToFilm);
 
-          Film.findOne({uuid : chatInfo.film.uuid}).then(data => {
-            console.log(123);
-            console.log(data);
-            data.linkToFilm = linkgToFilm;
-            data.save();
-
-          })
-              .catch(err => console.log(err));
-
-        }
-        else if ($('.mainlink').length > 0) {
+        } else if ($('.mainlink').length > 0) {
 
           $('.mainlink').each((index, elem) => {
 
             let some = $(elem).find('.mqn');
 
             if (some[0].children[0].data === chatInfo.film.year) {
+
               linkgToFilm = $(elem).attr('href');
+              addFilmLink(chatInfo.film.uuid, linkgToFilm);
             }
 
           });
-
-          console.log(linkgToFilm);
-
         }
+        console.log(linkgToFilm);
+        sendFilmKeyboard(chatInfo, linkgToFilm);
 
-        bot.sendPhoto(chatInfo.chatID, chatInfo.film.picture, {
-          caption: chatInfo.caption,
-          reply_markup: {
-            inline_keyboard: [
-              [
-                {
-                  text: 'Кинопоиск',
-                  url: chatInfo.film.link,
-                }
-              ],
-              [
-                {
-                  text: chatInfo.textFav,
-                  callback_data: JSON.stringify({
-                    uuid: chatInfo.film.uuid,
-                    user: chatInfo.currentUser.id,
-                    flag: chatInfo.filmFav,
-                  }),
-                }
-              ],
-              [
-                {
-                  text: 'Смотреть',
-                  url: linkgToFilm,
-                }
-              ]
-            ]
-          }
-        });
       }
   );
 
 }
+
+async function addFilmLink(film, filmLink) {
+  return Film.findOne({uuid: film}).then(data => {
+    data.linkToFilm = filmLink;
+    data.save();
+    return true;
+  })
+      .catch(err => {
+        console.log(err);
+        return false;
+      });
+}
+
+async function checkLinkToFilm(film) {
+  return Film.findOne({uuid: film}).then(data => {
+    return data.linkToFilm;
+  })
+      .catch(err => {
+        console.log(err);
+        return false;
+      });
+}
+
+async function getLinkToFilm(filmName, chatInfo) {
+
+  let linkFromDB = await checkLinkToFilm(chatInfo.film.uuid);
+
+  if (linkFromDB) {
+    console.log('из базы данных!!!');
+    sendFilmKeyboard(chatInfo, linkFromDB);
+  } else {
+    console.log('парсим!!!');
+    linkFromDB = await parseAndGetLink(filmName, chatInfo);
+  }
+
+}
+
+
+
